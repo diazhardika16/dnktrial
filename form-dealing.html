@@ -278,21 +278,30 @@
       data.set("fileType", file.type);
       data.set("fileData", await readFileAsBase64(file));
 
-      await fetch(SCRIPT_URL, {
+      const res = await fetch(SCRIPT_URL, {
         method: "POST",
-        mode: "no-cors", // Apps Script tidak mengirim header CORS; data tetap terkirim
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: data.toString()
       });
 
-      showStatus("ok", "Data dealing berhasil dikirim.");
+      let result = null;
+      try { result = await res.json(); } catch (_) {}
+
+      if (!result || result.ok !== true) {
+        console.error("Respons server tidak dikenali. Status:", res.status);
+        showStatus("err", "Server tidak mengonfirmasi data tersimpan (status " + res.status + "). Cek spreadsheet sebelum mengirim ulang.");
+        return;
+      }
+
+      showStatus("ok", "Data dealing berhasil dikirim dan tersimpan.");
       form.reset();
       nominal.value = "";
       // Kembalikan tanggal ke hari ini
       const d = new Date();
       form.tanggal.value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     } catch (err) {
-      showStatus("err", "Data belum terkirim. Periksa koneksi internet lalu coba lagi.");
+      console.error("Gagal menghubungi server:", err);
+      showStatus("err", "Tidak bisa menghubungi server atau konfirmasi diblokir browser (" + err.message + "). Cek spreadsheet dulu sebelum mengirim ulang.");
     } finally {
       btn.disabled = false;
       btn.textContent = "SUBMIT";
