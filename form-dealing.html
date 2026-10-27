@@ -190,6 +190,8 @@
   </form>
 </div>
 
+<iframe name="hiddenFrame" id="hiddenFrame" title="pengiriman data" style="display:none"></iframe>
+
 <script>
   // URL Web App Google Apps Script
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwdrAgqCgcS03_EhlLYZcYVzba5WAy1Yme4_xYU3Sk-FolJALbXKh9RSm0JBp8g_LdD/exec";
@@ -220,6 +222,46 @@
   rekening.addEventListener("input", () => {
     rekening.value = rekening.value.replace(/\D/g, "");
   });
+
+  // Kirim lewat form HTML biasa ke iframe tersembunyi (tidak terkena batasan fetch/CORS),
+  // lalu tunggu konfirmasi (postMessage) dari Apps Script.
+  function kirimViaForm(fields) {
+    return new Promise((resolve, reject) => {
+      const f = document.createElement("form");
+      f.method = "POST";
+      f.action = SCRIPT_URL;
+      f.target = "hiddenFrame";
+      f.style.display = "none";
+      Object.keys(fields).forEach((k) => {
+        const i = document.createElement("input");
+        i.type = "hidden";
+        i.name = k;
+        i.value = fields[k];
+        f.appendChild(i);
+      });
+      document.body.appendChild(f);
+
+      function cleanup() {
+        clearTimeout(timer);
+        window.removeEventListener("message", onMsg);
+        f.remove();
+      }
+      function onMsg(ev) {
+        const okOrigin = ev.origin.indexOf("googleusercontent.com") > -1 || ev.origin.indexOf("script.google.com") > -1;
+        if (!okOrigin || !ev.data || ev.data.source !== "dealing-form") return;
+        cleanup();
+        if (ev.data.ok) resolve();
+        else reject(new Error("SERVER: " + (ev.data.error || "data ditolak")));
+      }
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("TIMEOUT"));
+      }, 60000);
+
+      window.addEventListener("message", onMsg);
+      f.submit();
+    });
+  }
 
   function showStatus(type, text) {
     statusBox.className = "status " + type;
@@ -278,20 +320,7 @@
       data.set("fileType", file.type);
       data.set("fileData", await readFileAsBase64(file));
 
-      const res = await fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: data.toString()
-      });
-
-      let result = null;
-      try { result = await res.json(); } catch (_) {}
-
-      if (!result || result.ok !== true) {
-        console.error("Respons server tidak dikenali. Status:", res.status);
-        showStatus("err", "Server tidak mengonfirmasi data tersimpan (status " + res.status + "). Cek spreadsheet sebelum mengirim ulang.");
-        return;
-      }
+      await kirimViaForm(Object.fromEntries(data));
 
       showStatus("ok", "Data dealing berhasil dikirim dan tersimpan.");
       form.reset();
@@ -300,8 +329,12 @@
       const d = new Date();
       form.tanggal.value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     } catch (err) {
-      console.error("Gagal menghubungi server:", err);
-      showStatus("err", "Tidak bisa menghubungi server atau konfirmasi diblokir browser (" + err.message + "). Cek spreadsheet dulu sebelum mengirim ulang.");
+      console.error("Pengiriman bermasalah:", err);
+      if (String(err.message).indexOf("SERVER:") === 0) {
+        showStatus("err", "Server menolak data. " + err.message.replace("SERVER: ", "") + " Data belum tersimpan.");
+      } else {
+        showStatus("err", "Belum ada konfirmasi dari server setelah 60 detik. Cek tab WEB DATABASE dulu sebelum mengirim ulang, karena data bisa saja sudah masuk.");
+      }
     } finally {
       btn.disabled = false;
       btn.textContent = "SUBMIT";
