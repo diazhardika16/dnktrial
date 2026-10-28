@@ -120,7 +120,11 @@
 
     <div class="row">
       <label for="event">Nama Event / Tagging</label><span class="colon">:</span>
-      <input id="event" name="event" type="text" required>
+      <div>
+        <input id="event" name="event" type="text" list="daftarEvent" autocomplete="off" required>
+        <datalist id="daftarEvent"></datalist>
+        <div class="hint">Pilih dari daftar yang muncul saat mengetik, atau tulis nama event baru.</div>
+      </div>
     </div>
 
     <div class="row">
@@ -223,6 +227,29 @@
     rekening.value = rekening.value.replace(/\D/g, "");
   });
 
+  // Ambil daftar Nama Event dari Sheet (kolom D tab WEB DATABASE).
+  // Memakai teknik <script> (JSONP) supaya tidak terkena batasan CORS.
+  window.isiDaftarEvent = function (list) {
+    const dl = document.getElementById("daftarEvent");
+    dl.innerHTML = "";
+    (list || []).forEach((nama) => {
+      const opt = document.createElement("option");
+      opt.value = nama;
+      dl.appendChild(opt);
+    });
+  };
+
+  function muatEvent() {
+    const lama = document.getElementById("skripEvent");
+    if (lama) lama.remove();
+    const s = document.createElement("script");
+    s.id = "skripEvent";
+    s.src = SCRIPT_URL + "?action=events&callback=isiDaftarEvent&t=" + Date.now();
+    s.onerror = () => console.warn("Daftar event gagal dimuat; kolom tetap bisa diisi manual.");
+    document.head.appendChild(s);
+  }
+  muatEvent();
+
   // Kirim lewat form HTML biasa ke iframe tersembunyi (tidak terkena batasan fetch/CORS),
   // lalu tunggu konfirmasi (postMessage) dari Apps Script.
   function kirimViaForm(fields) {
@@ -323,6 +350,7 @@
       await kirimViaForm(Object.fromEntries(data));
 
       showStatus("ok", "Data dealing berhasil dikirim dan tersimpan.");
+      muatEvent(); // segarkan daftar event dengan data terbaru
       form.reset();
       nominal.value = "";
       // Kembalikan tanggal ke hari ini
