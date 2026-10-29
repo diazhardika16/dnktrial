@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Input Dealing Pengajuan</title>
+<title>Input Pengajuan</title>
 <style>
   :root {
     --ink: #111;
@@ -14,6 +14,8 @@
     --submit-dark: #a80000;
     --error: #b3261e;
     --ok: #0b6b2e;
+    --wa: #0a7a3b;
+    --wa-dark: #075c2c;
   }
   * { box-sizing: border-box; }
   body {
@@ -25,12 +27,31 @@
     font-size: 15px;
     line-height: 1.4;
   }
-  .sheet {
-    max-width: 680px;
+
+  /* Tata letak: form di kiri, log di kanan (turun ke bawah di layar sempit) */
+  .layout {
+    max-width: 1420px;
     margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .sheet {
+    flex: 1 1 640px;
+    max-width: 680px;
     background: #fff;
     border: 1px solid var(--line);
   }
+  .logbox {
+    flex: 1 1 520px;
+    max-width: 680px;
+    min-width: 0;
+    background: #e3e3e3;
+    border: 1px solid var(--line);
+  }
+
   .sheet-title {
     background: var(--header);
     border-bottom: 1px solid #000;
@@ -48,7 +69,7 @@
     align-items: start;
     padding: 6px 0;
   }
-  .row > label, .row > .lbl { font-weight: 700; padding-top: 8px; }
+  .row > label { font-weight: 700; padding-top: 8px; }
   .colon { padding-top: 8px; text-align: center; }
   .hint { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
   input[type=text], input[type=date], select, textarea {
@@ -79,7 +100,7 @@
   }
   .hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
   .actions { margin-top: 22px; }
-  button {
+  #submitBtn {
     display: block;
     width: 100%;
     padding: 14px;
@@ -91,108 +112,238 @@
     border: 0;
     cursor: pointer;
   }
-  button:hover { background: var(--submit-dark); }
-  button:disabled { opacity: .6; cursor: wait; }
+  #submitBtn:hover { background: var(--submit-dark); }
+  #submitBtn:disabled { opacity: .6; cursor: wait; }
   .status { margin-top: 14px; padding: 12px 14px; display: none; font-weight: 600; }
   .status.ok { display: block; background: #e5f5ea; color: var(--ok); }
   .status.err { display: block; background: #fbe9e7; color: var(--error); }
+
+  /* Log pengajuan */
+  .log-title {
+    margin: 0;
+    padding: 12px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .log-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 8px;
+    font-size: 12.5px;
+    color: #333;
+  }
+  .log-bar button {
+    font: inherit;
+    font-size: 12.5px;
+    padding: 4px 10px;
+    border: 1px solid #888;
+    background: #fff;
+    color: var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .log-scroll { overflow-x: auto; background: #fff; border-top: 1px solid var(--line); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 580px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
+  th { background: #f3f3f3; font-weight: 700; white-space: nowrap; }
+  th.num, td.num { text-align: right; white-space: nowrap; }
+  tr.baru td { background: #fff8b3; }
+  td.kosong { text-align: center; color: var(--muted); padding: 18px; }
+
+  /* Popup rekap */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 50;
+  }
+  .overlay[hidden] { display: none; }
+  .rekap {
+    width: 100%;
+    max-width: 460px;
+    max-height: 90vh;
+    overflow: auto;
+    background: var(--submit);
+    color: #fff;
+    padding: 20px;
+    border-radius: 4px;
+  }
+  .rekap h2 { margin: 0 0 4px; text-align: center; font-size: 17px; letter-spacing: .06em; }
+  .rekap .sub { margin: 0 0 12px; text-align: center; font-size: 13px; }
+  .rekap pre {
+    margin: 0 0 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font: inherit;
+    font-size: 14.5px;
+    line-height: 1.6;
+    background: rgba(0, 0, 0, .2);
+    padding: 12px;
+    border-radius: 3px;
+  }
+  .rekap-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    font: inherit;
+    font-weight: 700;
+    border: 0;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-radius: 3px;
+    flex: 1 1 120px;
+  }
+  .btn-share { background: var(--wa); color: #fff; }
+  .btn-share:hover { background: var(--wa-dark); }
+  .btn-alt { background: #fff; color: var(--ink); }
+  .btn-alt:hover { background: #eee; }
+  .rekap :focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
   @media (max-width: 560px) {
     .row { grid-template-columns: 1fr; row-gap: 4px; }
     .colon { display: none; }
-    .row > label, .row > .lbl { padding-top: 0; }
+    .row > label { padding-top: 0; }
   }
 </style>
 </head>
 <body>
-<div class="sheet">
-  <h1 class="sheet-title">SHEET KOLOM INPUT PENGAJUAN</h1>
+<div class="layout">
 
-  <form id="dealForm" novalidate>
-    <div class="row">
-      <label for="tanggal">Tanggal Input / submit</label><span class="colon">:</span>
-      <input id="tanggal" name="tanggal" type="date" required>
-    </div>
+  <div class="sheet">
+    <h1 class="sheet-title">SHEET KOLOM INPUT PENGAJUAN</h1>
 
-    <div class="row">
-      <label for="requestor">Nama Requestor</label><span class="colon">:</span>
-      <input id="requestor" name="requestor" type="text" required>
-    </div>
-
-    <div class="row">
-      <label for="event">Nama Event / Tagging</label><span class="colon">:</span>
-      <div>
-        <input id="event" name="event" type="text" list="daftarEvent" autocomplete="off" required>
-        <datalist id="daftarEvent"></datalist>
-        <div class="hint">Pilih dari daftar yang muncul saat mengetik, atau tulis nama event baru.</div>
+    <form id="dealForm" novalidate>
+      <div class="row">
+        <label for="tanggal">Tanggal Input / submit</label><span class="colon">:</span>
+        <input id="tanggal" name="tanggal" type="date" required>
       </div>
-    </div>
 
-    <div class="row">
-      <label for="keterangan">Keterangan</label><span class="colon">:</span>
-      <textarea id="keterangan" name="keterangan" required></textarea>
-    </div>
-
-    <div class="row">
-      <label for="tipe">Tipe Pembayaran</label><span class="colon">:</span>
-      <select id="tipe" name="tipe" required>
-        <option value="" disabled selected>Pilih tipe pembayaran</option>
-        <option>Bayar Reimbursement</option>
-        <option>Bayar Vendor / Talent / Dan Sejenisnya</option>
-        <option>Bayar Freelance / Man power</option>
-        <option>Bayar Perpajakan / Sejenisnya</option>
-        <option>Bayar Addcost Vendor / Freelance</option>
-        <option>Bayar Petty Cash</option>
-        <option>Bayar CSR / Lain Lain</option>
-      </select>
-    </div>
-
-    <div class="row">
-      <label for="nominal">Nominal Deal</label><span class="colon">:</span>
-      <div class="rp">
-        <span>Rp</span>
-        <input id="nominal" name="nominal_tampil" type="text" inputmode="numeric" autocomplete="off" placeholder="0" required>
+      <div class="row">
+        <label for="requestor">Nama Requestor</label><span class="colon">:</span>
+        <input id="requestor" name="requestor" type="text" required>
       </div>
-    </div>
 
-    <div class="row">
-      <label for="brand">Nama Brand Vendor / Event</label><span class="colon">:</span>
-      <input id="brand" name="brand" type="text" required>
-    </div>
-
-    <div class="row">
-      <label for="bank">Nama Bank</label><span class="colon">:</span>
-      <input id="bank" name="bank" type="text" required>
-    </div>
-
-    <div class="row">
-      <label for="rekening">Nomor Rekening</label><span class="colon">:</span>
-      <input id="rekening" name="rekening" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" required>
-    </div>
-
-    <div class="row">
-      <label for="pemilik">Nama Pemilik Rekening</label><span class="colon">:</span>
-      <input id="pemilik" name="pemilik" type="text" required>
-    </div>
-
-    <div class="row">
-      <label for="sph">Upload Drive link SPH</label><span class="colon">:</span>
-      <div>
-        <input id="sph" type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" required>
-        <div class="hint">Format PNG, JPG, atau PDF. Maksimal 5 MB.</div>
+      <div class="row">
+        <label for="event">Nama Event / Tagging</label><span class="colon">:</span>
+        <div>
+          <input id="event" name="event" type="text" list="daftarEvent" autocomplete="off" required>
+          <datalist id="daftarEvent"></datalist>
+          <div class="hint">Pilih dari daftar yang muncul saat mengetik, atau tulis nama event baru.</div>
+        </div>
       </div>
-    </div>
 
-    <!-- Kolom jebakan untuk bot -->
-    <div class="hp" aria-hidden="true">
-      <label for="website">Jangan diisi</label>
-      <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
-    </div>
+      <div class="row">
+        <label for="keterangan">Keterangan</label><span class="colon">:</span>
+        <textarea id="keterangan" name="keterangan" required></textarea>
+      </div>
 
-    <div class="actions">
-      <button type="submit" id="submitBtn">SUBMIT</button>
-      <div id="status" class="status" role="status" aria-live="polite"></div>
+      <div class="row">
+        <label for="tipe">Tipe Pembayaran</label><span class="colon">:</span>
+        <select id="tipe" name="tipe" required>
+          <option value="" disabled selected>Pilih tipe pembayaran</option>
+          <option>Bayar Reimbursement</option>
+          <option>Bayar Vendor / Talent / Dan Sejenisnya</option>
+          <option>Bayar Freelance / Man power</option>
+          <option>Bayar Perpajakan / Sejenisnya</option>
+          <option>Bayar Addcost Vendor / Freelance</option>
+          <option>Bayar Petty Cash</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="nominal">Nominal Deal</label><span class="colon">:</span>
+        <div class="rp">
+          <span>Rp</span>
+          <input id="nominal" name="nominal_tampil" type="text" inputmode="numeric" autocomplete="off" placeholder="0" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="brand">Nama Brand Vendor / Event</label><span class="colon">:</span>
+        <input id="brand" name="brand" type="text" required>
+      </div>
+
+      <div class="row">
+        <label for="bank">Nama Bank</label><span class="colon">:</span>
+        <input id="bank" name="bank" type="text" required>
+      </div>
+
+      <div class="row">
+        <label for="rekening">Nomor Rekening</label><span class="colon">:</span>
+        <input id="rekening" name="rekening" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" required>
+      </div>
+
+      <div class="row">
+        <label for="pemilik">Nama Pemilik Rekening</label><span class="colon">:</span>
+        <input id="pemilik" name="pemilik" type="text" required>
+      </div>
+
+      <div class="row">
+        <label for="sph">Upload Drive link SPH</label><span class="colon">:</span>
+        <div>
+          <input id="sph" type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" required>
+          <div class="hint">Format PNG, JPG, atau PDF. Maksimal 5 MB.</div>
+        </div>
+      </div>
+
+      <!-- Kolom jebakan untuk bot -->
+      <div class="hp" aria-hidden="true">
+        <label for="website">Jangan diisi</label>
+        <input id="website" name="website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submitBtn">SUBMIT</button>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </div>
+    </form>
+  </div>
+
+  <section class="logbox" aria-labelledby="logTitle">
+    <h2 class="log-title" id="logTitle">LOG PENGAJUAN</h2>
+    <div class="log-bar">
+      <span id="logStatus" role="status" aria-live="polite">Memuat...</span>
+      <button type="button" id="logRefresh">Muat ulang</button>
     </div>
-  </form>
+    <div class="log-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Requestor</th>
+            <th>Tag Event</th>
+            <th>Tipe Pembayaran</th>
+            <th>Vendor</th>
+            <th class="num">Nominal</th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+          <tr><td class="kosong" colspan="6">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- Popup rekap -->
+<div id="rekapOverlay" class="overlay" hidden>
+  <div class="rekap" role="dialog" aria-modal="true" aria-labelledby="rekapTitle">
+    <h2 id="rekapTitle">REKAP</h2>
+    <p class="sub">Data sudah tersimpan. Kirim rekap ini ke grup WhatsApp.</p>
+    <pre id="rekapText"></pre>
+    <div class="rekap-actions">
+      <button type="button" class="btn btn-share" id="rekapShare">SHARE</button>
+      <button type="button" class="btn btn-alt" id="rekapCopy">Salin teks</button>
+      <button type="button" class="btn btn-alt" id="rekapClose">Tutup</button>
+    </div>
+  </div>
 </div>
 
 <iframe name="hiddenFrame" id="hiddenFrame" title="pengiriman data" style="display:none"></iframe>
@@ -209,27 +360,27 @@
   const rekening = document.getElementById("rekening");
   const fileInput = document.getElementById("sph");
 
-  // Tanggal default: hari ini (zona waktu perangkat)
-  (function setToday() {
+  // ---------- Tanggal ----------
+  function hariIniISO() {
     const d = new Date();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    document.getElementById("tanggal").value = d.getFullYear() + "-" + m + "-" + day;
-  })();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function formatTanggalID(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    return m ? m[3] + "/" + m[2] + "/" + m[1] : iso;
+  }
+  document.getElementById("tanggal").value = hariIniISO();
 
-  // Format nominal dengan titik ribuan saat mengetik
+  // ---------- Format input ----------
   nominal.addEventListener("input", () => {
     const digits = nominal.value.replace(/\D/g, "");
     nominal.value = digits ? Number(digits).toLocaleString("id-ID") : "";
   });
-
-  // Nomor rekening: hanya angka
   rekening.addEventListener("input", () => {
     rekening.value = rekening.value.replace(/\D/g, "");
   });
 
-  // Ambil daftar Nama Event dari Sheet (kolom D tab WEB DATABASE).
-  // Memakai teknik <script> (JSONP) supaya tidak terkena batasan CORS.
+  // ---------- Daftar event (saran pengetikan) ----------
   window.isiDaftarEvent = function (list) {
     const dl = document.getElementById("daftarEvent");
     dl.innerHTML = "";
@@ -239,7 +390,6 @@
       dl.appendChild(opt);
     });
   };
-
   function muatEvent() {
     const lama = document.getElementById("skripEvent");
     if (lama) lama.remove();
@@ -249,8 +399,146 @@
     s.onerror = () => console.warn("Daftar event gagal dimuat; kolom tetap bisa diisi manual.");
     document.head.appendChild(s);
   }
-  muatEvent();
 
+  // ---------- Log 10 pengajuan terbaru ----------
+  const logBody = document.getElementById("logBody");
+  const logStatus = document.getElementById("logStatus");
+  let sorotBaru = false;
+  let logTimer = null;
+
+  function sel(teks, kelas) {
+    const td = document.createElement("td");
+    td.textContent = teks;
+    if (kelas) td.className = kelas;
+    return td;
+  }
+
+  window.isiLog = function (rows) {
+    clearTimeout(logTimer);
+    logBody.innerHTML = "";
+    if (!rows || !rows.length) {
+      const tr = document.createElement("tr");
+      const td = sel("Belum ada pengajuan.", "kosong");
+      td.colSpan = 6;
+      tr.appendChild(td);
+      logBody.appendChild(tr);
+    } else {
+      rows.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        if (sorotBaru && i === 0) tr.className = "baru";
+        tr.appendChild(sel(r.tanggal || ""));
+        tr.appendChild(sel(r.requestor || ""));
+        tr.appendChild(sel(r.event || ""));
+        tr.appendChild(sel(r.tipe || ""));
+        tr.appendChild(sel(r.vendor || ""));
+        tr.appendChild(sel("Rp " + Number(r.nominal || 0).toLocaleString("id-ID"), "num"));
+        logBody.appendChild(tr);
+      });
+    }
+    const jam = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    logStatus.textContent = "10 pengajuan terbaru. Diperbarui " + jam;
+  };
+
+  function muatLog(sorot) {
+    sorotBaru = !!sorot;
+    logStatus.textContent = "Memuat...";
+    const lama = document.getElementById("skripLog");
+    if (lama) lama.remove();
+    clearTimeout(logTimer);
+    const s = document.createElement("script");
+    s.id = "skripLog";
+    s.src = SCRIPT_URL + "?action=log&callback=isiLog&t=" + Date.now();
+    s.onerror = gagalLog;
+    document.head.appendChild(s);
+    // Jika skrip termuat tapi bukan data log (mis. kode Apps Script belum diperbarui)
+    logTimer = setTimeout(gagalLog, 15000);
+  }
+  function gagalLog() {
+    clearTimeout(logTimer);
+    logStatus.textContent = "Log belum bisa dimuat. Coba muat ulang.";
+  }
+  document.getElementById("logRefresh").addEventListener("click", () => muatLog(false));
+
+  // ---------- Popup rekap ----------
+  const overlay = document.getElementById("rekapOverlay");
+  const rekapText = document.getElementById("rekapText");
+  const btnShare = document.getElementById("rekapShare");
+  const btnCopy = document.getElementById("rekapCopy");
+  const btnClose = document.getElementById("rekapClose");
+  let rekapSaatIni = null;
+
+  function barisRekap(d) {
+    return [
+      ["Tanggal", d.tanggal],
+      ["Requestor", d.requestor],
+      ["Tag Event", d.event],
+      ["Keterangan", d.keterangan],
+      ["Tipe Pembayaran", d.tipe],
+      ["Nominal", d.nominal],
+      ["Vendor", d.vendor],
+      ["Nama Bank", d.bank],
+      ["No Rekening", d.rekening],
+      ["Nama Pemilik Rek", d.pemilik]
+    ];
+  }
+  function teksIsi(d) {
+    return barisRekap(d).map((b) => b[0] + " : " + b[1]).join("\n");
+  }
+  function teksUntukWA(d) {
+    return "*REKAP PENGAJUAN*\n" + teksIsi(d);
+  }
+
+  function bukaRekap(d) {
+    rekapSaatIni = d;
+    rekapText.textContent = teksIsi(d);
+    btnCopy.textContent = "Salin teks";
+    overlay.hidden = false;
+    document.body.style.overflow = "hidden";
+    btnShare.focus();
+  }
+  function tutupRekap() {
+    overlay.hidden = true;
+    document.body.style.overflow = "";
+    btn.focus();
+  }
+
+  btnShare.addEventListener("click", () => {
+    if (!rekapSaatIni) return;
+    const url = "https://wa.me/?text=" + encodeURIComponent(teksUntukWA(rekapSaatIni));
+    window.open(url, "_blank", "noopener");
+  });
+
+  btnCopy.addEventListener("click", async () => {
+    if (!rekapSaatIni) return;
+    const teks = teksUntukWA(rekapSaatIni);
+    try {
+      await navigator.clipboard.writeText(teks);
+    } catch (e) {
+      const ta = document.createElement("textarea");
+      ta.value = teks;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch (_) {}
+      ta.remove();
+    }
+    btnCopy.textContent = "Tersalin";
+    setTimeout(() => { btnCopy.textContent = "Salin teks"; }, 2000);
+  });
+
+  btnClose.addEventListener("click", tutupRekap);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) tutupRekap(); });
+  document.addEventListener("keydown", (e) => {
+    if (overlay.hidden) return;
+    if (e.key === "Escape") { tutupRekap(); return; }
+    if (e.key === "Tab") {
+      const f = [btnShare, btnCopy, btnClose];
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+
+  // ---------- Pengiriman ----------
   // Kirim lewat form HTML biasa ke iframe tersembunyi (tidak terkena batasan fetch/CORS),
   // lalu tunggu konfirmasi (postMessage) dari Apps Script.
   function kirimViaForm(fields) {
@@ -331,18 +619,32 @@
     btn.disabled = true;
     btn.textContent = "MENGIRIM...";
 
+    // Simpan isi rekap sebelum form dikosongkan
+    const rekap = {
+      tanggal: formatTanggalID(form.tanggal.value),
+      requestor: form.requestor.value.trim(),
+      event: form.event.value.trim(),
+      keterangan: form.keterangan.value.trim(),
+      tipe: form.tipe.value,
+      nominal: "Rp " + nominal.value,
+      vendor: form.brand.value.trim(),
+      bank: form.bank.value.trim(),
+      rekening: rekening.value,
+      pemilik: form.pemilik.value.trim()
+    };
+
     try {
       const data = new URLSearchParams();
       data.set("tanggal", form.tanggal.value);
-      data.set("requestor", form.requestor.value.trim());
-      data.set("event", form.event.value.trim());
-      data.set("keterangan", form.keterangan.value.trim());
-      data.set("tipe", form.tipe.value);
+      data.set("requestor", rekap.requestor);
+      data.set("event", rekap.event);
+      data.set("keterangan", rekap.keterangan);
+      data.set("tipe", rekap.tipe);
       data.set("nominal", nominal.value.replace(/\D/g, ""));
-      data.set("brand", form.brand.value.trim());
-      data.set("bank", form.bank.value.trim());
-      data.set("rekening", rekening.value);
-      data.set("pemilik", form.pemilik.value.trim());
+      data.set("brand", rekap.vendor);
+      data.set("bank", rekap.bank);
+      data.set("rekening", rekap.rekening);
+      data.set("pemilik", rekap.pemilik);
       data.set("website", form.website.value);
       data.set("fileName", file.name);
       data.set("fileType", file.type);
@@ -350,25 +652,30 @@
 
       await kirimViaForm(Object.fromEntries(data));
 
-      showStatus("ok", "Data dealing berhasil dikirim dan tersimpan.");
-      muatEvent(); // segarkan daftar event dengan data terbaru
+      showStatus("ok", "Data pengajuan berhasil dikirim dan tersimpan.");
       form.reset();
       nominal.value = "";
-      // Kembalikan tanggal ke hari ini
-      const d = new Date();
-      form.tanggal.value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      document.getElementById("tanggal").value = hariIniISO();
+
+      muatEvent();      // segarkan daftar event
+      muatLog(true);    // segarkan log; baris terbaru disorot
+      bukaRekap(rekap); // tampilkan popup rekap + tombol share WhatsApp
     } catch (err) {
       console.error("Pengiriman bermasalah:", err);
       if (String(err.message).indexOf("SERVER:") === 0) {
         showStatus("err", "Server menolak data. " + err.message.replace("SERVER: ", "") + " Data belum tersimpan.");
       } else {
-        showStatus("err", "Belum ada konfirmasi dari server setelah 60 detik. Cek tab WEB DATABASE dulu sebelum mengirim ulang, karena data bisa saja sudah masuk.");
+        showStatus("err", "Belum ada konfirmasi dari server setelah 60 detik. Cek log di samping dulu sebelum mengirim ulang, karena data bisa saja sudah masuk.");
       }
     } finally {
       btn.disabled = false;
       btn.textContent = "SUBMIT";
     }
   });
+
+  // Muat data awal
+  muatEvent();
+  muatLog(false);
 </script>
 </body>
 </html>
