@@ -82,6 +82,7 @@
     color: var(--ink);
   }
   textarea { min-height: 76px; resize: vertical; }
+  input.terisi { background: #eef5ff; }
   input[type=file] { width: 100%; font: inherit; padding: 6px 0; }
   .rp { display: flex; align-items: stretch; }
   .rp span {
@@ -234,7 +235,7 @@
         <div>
           <input id="event" name="event" type="text" list="daftarEvent" autocomplete="off" required>
           <datalist id="daftarEvent"></datalist>
-          <div class="hint">Pilih dari daftar yang muncul saat mengetik, atau tulis nama event baru.</div>
+          <div class="hint">Ketik beberapa huruf lalu pilih dari daftar Master Data.</div>
         </div>
       </div>
 
@@ -265,6 +266,15 @@
       </div>
 
       <div class="row">
+        <label for="rekening">Nomor Rekening</label><span class="colon">:</span>
+        <div>
+          <input id="rekening" name="rekening" type="text" inputmode="numeric" pattern="[0-9]+" list="daftarRekening" autocomplete="off" required>
+          <datalist id="daftarRekening"></datalist>
+          <div class="hint" id="hintRekening">Pilih dari daftar Data Vendor, atau ketik nomor rekening baru.</div>
+        </div>
+      </div>
+
+      <div class="row">
         <label for="brand">Nama Brand Vendor / Event</label><span class="colon">:</span>
         <input id="brand" name="brand" type="text" required>
       </div>
@@ -272,11 +282,6 @@
       <div class="row">
         <label for="bank">Nama Bank</label><span class="colon">:</span>
         <input id="bank" name="bank" type="text" required>
-      </div>
-
-      <div class="row">
-        <label for="rekening">Nomor Rekening</label><span class="colon">:</span>
-        <input id="rekening" name="rekening" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" required>
       </div>
 
       <div class="row">
@@ -381,7 +386,9 @@
   });
 
   // ---------- Daftar event (saran pengetikan) ----------
+  let daftarEventValid = [];
   window.isiDaftarEvent = function (list) {
+    daftarEventValid = list || [];
     const dl = document.getElementById("daftarEvent");
     dl.innerHTML = "";
     (list || []).forEach((nama) => {
@@ -399,6 +406,63 @@
     s.onerror = () => console.warn("Daftar event gagal dimuat; kolom tetap bisa diisi manual.");
     document.head.appendChild(s);
   }
+
+  // ---------- Data vendor (Nomor Rekening -> vendor, bank, pemilik) ----------
+  let vendorMap = {};
+  let autoTerisi = false;
+  const brandEl = document.getElementById("brand");
+  const bankEl = document.getElementById("bank");
+  const pemilikEl = document.getElementById("pemilik");
+  const hintRekening = document.getElementById("hintRekening");
+  const HINT_REK = "Pilih dari daftar Data Vendor, atau ketik nomor rekening baru.";
+
+  function setTerisi(on) {
+    [brandEl, bankEl, pemilikEl].forEach((el) => el.classList.toggle("terisi", on));
+  }
+
+  function isiDariVendor() {
+    const v = vendorMap[rekening.value];
+    if (v) {
+      brandEl.value = v.vendor;
+      bankEl.value = v.bank;
+      pemilikEl.value = v.pemilik;
+      autoTerisi = true;
+      setTerisi(true);
+      hintRekening.textContent = "Terisi otomatis dari Data Vendor. Periksa kembali, ubah bila perlu.";
+    } else if (autoTerisi) {
+      brandEl.value = "";
+      bankEl.value = "";
+      pemilikEl.value = "";
+      autoTerisi = false;
+      setTerisi(false);
+      hintRekening.textContent = HINT_REK;
+    }
+  }
+
+  window.isiDaftarVendor = function (list) {
+    vendorMap = {};
+    const dl = document.getElementById("daftarRekening");
+    dl.innerHTML = "";
+    (list || []).forEach((v) => {
+      vendorMap[v.rekening] = v;
+      const opt = document.createElement("option");
+      opt.value = v.rekening;
+      opt.label = v.vendor + (v.bank ? " - " + v.bank : "");
+      dl.appendChild(opt);
+    });
+    isiDariVendor();
+  };
+
+  function muatVendor() {
+    const lama = document.getElementById("skripVendor");
+    if (lama) lama.remove();
+    const s = document.createElement("script");
+    s.id = "skripVendor";
+    s.src = SCRIPT_URL + "?action=vendors&callback=isiDaftarVendor&t=" + Date.now();
+    s.onerror = () => console.warn("Daftar vendor gagal dimuat; data vendor diisi manual.");
+    document.head.appendChild(s);
+  }
+  rekening.addEventListener("input", isiDariVendor);
 
   // ---------- Log 10 pengajuan terbaru ----------
   const logBody = document.getElementById("logBody");
@@ -616,6 +680,18 @@
       return;
     }
 
+    // Nama event harus dipilih dari daftar Master Data (jika daftar berhasil dimuat)
+    if (daftarEventValid.length) {
+      const input = form.event.value.trim().toLowerCase();
+      const cocok = daftarEventValid.find((n) => String(n).trim().toLowerCase() === input);
+      if (!cocok) {
+        showStatus("err", "Nama Event / Tagging harus dipilih dari daftar Master Data. Ketik beberapa huruf lalu pilih dari daftar yang muncul.");
+        form.event.focus();
+        return;
+      }
+      form.event.value = cocok; // samakan penulisan dengan Master Data
+    }
+
     btn.disabled = true;
     btn.textContent = "MENGIRIM...";
 
@@ -656,6 +732,9 @@
       form.reset();
       nominal.value = "";
       document.getElementById("tanggal").value = hariIniISO();
+      autoTerisi = false;
+      setTerisi(false);
+      hintRekening.textContent = HINT_REK;
 
       muatEvent();      // segarkan daftar event
       muatLog(true);    // segarkan log; baris terbaru disorot
@@ -675,6 +754,7 @@
 
   // Muat data awal
   muatEvent();
+  muatVendor();
   muatLog(false);
 </script>
 </body>
