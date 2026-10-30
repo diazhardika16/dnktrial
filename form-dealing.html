@@ -147,10 +147,10 @@
     border-radius: 3px;
     cursor: pointer;
   }
-  .log-scroll { overflow-x: auto; background: #fff; border-top: 1px solid var(--line); }
+  .log-scroll { overflow: auto; max-height: 75vh; background: #fff; border-top: 1px solid var(--line); }
   table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 580px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
-  th { background: #f3f3f3; font-weight: 700; white-space: nowrap; }
+  th { background: #f3f3f3; font-weight: 700; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
   th.num, td.num { text-align: right; white-space: nowrap; }
   tr.baru td { background: #fff8b3; }
   td.kosong { text-align: center; color: var(--muted); padding: 18px; }
@@ -500,7 +500,7 @@
       });
     }
     const jam = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-    logStatus.textContent = "10 pengajuan terbaru. Diperbarui " + jam;
+    logStatus.textContent = "20 pengajuan terbaru. Diperbarui " + jam;
   };
 
   function muatLog(sorot) {
