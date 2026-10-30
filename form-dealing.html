@@ -546,7 +546,9 @@
     ];
   }
   function teksIsi(d) {
-    return barisRekap(d).map((b) => b[0] + " : " + b[1]).join("\n");
+    const baris = barisRekap(d);
+    if (d.kode) baris.unshift(["Kode", d.kode]);
+    return baris.map((b) => b[0] + " : " + b[1]).join("\n");
   }
   function teksUntukWA(d) {
     return "*REKAP PENGAJUAN*\n" + teksIsi(d);
@@ -630,7 +632,7 @@
         const okOrigin = ev.origin.indexOf("googleusercontent.com") > -1 || ev.origin.indexOf("script.google.com") > -1;
         if (!okOrigin || !ev.data || ev.data.source !== "dealing-form") return;
         cleanup();
-        if (ev.data.ok) resolve();
+        if (ev.data.ok) resolve(ev.data.kode || "");
         else reject(new Error("SERVER: " + (ev.data.error || "data ditolak")));
       }
       const timer = setTimeout(() => {
@@ -726,9 +728,10 @@
       data.set("fileType", file.type);
       data.set("fileData", await readFileAsBase64(file));
 
-      await kirimViaForm(Object.fromEntries(data));
+      const kode = await kirimViaForm(Object.fromEntries(data));
+      rekap.kode = kode;
 
-      showStatus("ok", "Data pengajuan berhasil dikirim dan tersimpan.");
+      showStatus("ok", "Data pengajuan berhasil dikirim dan tersimpan." + (kode ? " Kode: " + kode : ""));
       form.reset();
       nominal.value = "";
       document.getElementById("tanggal").value = hariIniISO();
