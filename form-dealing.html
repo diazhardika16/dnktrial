@@ -292,7 +292,7 @@
       <div class="row">
         <label for="sph">Upload Drive link SPH</label><span class="colon">:</span>
         <div>
-          <input id="sph" type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf" required>
+          <input id="sph" type="file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf">
           <div class="hint">Format PNG, JPG, atau PDF. Maksimal 5 MB.</div>
         </div>
       </div>
@@ -673,13 +673,9 @@
     }
 
     const file = fileInput.files[0];
-    if (!file) {
-      showStatus("err", "Pilih file SPH terlebih dahulu.");
-      return;
-    }
-    if (file.size > MAX_FILE_MB * 1024 * 1024) {
-      showStatus("err", "Ukuran file melebihi " + MAX_FILE_MB + " MB. Kecilkan file lalu coba lagi.");
-      return;
+    if (file && file.size > MAX_FILE_MB * 1024 * 1024) {
+    showStatus("err", "Ukuran file melebihi " + MAX_FILE_MB + " MB. Kecilkan file lalu coba lagi.");
+    return;
     }
 
     // Nama event harus dipilih dari daftar Master Data (jika daftar berhasil dimuat)
@@ -724,9 +720,9 @@
       data.set("rekening", rekap.rekening);
       data.set("pemilik", rekap.pemilik);
       data.set("website", form.website.value);
-      data.set("fileName", file.name);
-      data.set("fileType", file.type);
-      data.set("fileData", await readFileAsBase64(file));
+      data.set("fileName", file ? file.name : "");
+      data.set("fileType", file ? file.type : "");
+      data.set("fileData", file ? await readFileAsBase64(file) : "");
 
       const kode = await kirimViaForm(Object.fromEntries(data));
       rekap.kode = kode;
