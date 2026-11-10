@@ -672,6 +672,11 @@
       return;
     }
 
+    const file = fileInput.files[0];
+    if (!file) {
+      showStatus("err", "Pilih file SPH terlebih dahulu.");
+      return;
+    }
     if (file.size > MAX_FILE_MB * 1024 * 1024) {
       showStatus("err", "Ukuran file melebihi " + MAX_FILE_MB + " MB. Kecilkan file lalu coba lagi.");
       return;
